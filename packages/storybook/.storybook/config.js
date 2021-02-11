@@ -7,7 +7,7 @@ addParameters({
   },
 });
 
-const comps = require.context('@project/components/src', true, /.stories.js$/);
+const comps = require.context('@stanson/components/src', true, /.stories.tsx$/);
 
 configure(() => {
   comps.keys().forEach(filename => comps(filename));
