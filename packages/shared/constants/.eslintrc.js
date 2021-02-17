@@ -1,7 +1,9 @@
 module.exports = {
   parser: '@typescript-eslint/parser', // Specifies the ESLint parser
   extends: [
-      require.resolve('eslint-config-react-app'),
+    // Extend on the config used in `react-scripts`
+    require.resolve('eslint-config-react-app'),
+    // If you want extra rules/extensions, it can be added here:
     // 'plugin:react/recommended', // Uses the recommended rules from @eslint-plugin-react
     // 'plugin:@typescript-eslint/recommended', // Uses the recommended rules from @typescript-eslint/eslint-plugin
   ],

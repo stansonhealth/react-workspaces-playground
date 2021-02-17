@@ -38,6 +38,10 @@ Update the `homepage` URL in `app-one/package.json` to reflect your GitHub Pages
 }
 ```
 
+### Stuff to read ###
+https://medium.com/@audisho.sada/using-react-hooks-to-asynchronously-make-api-requests-1fdf52f797ce
+
+
 Run the deploy script.
 
 ```bash

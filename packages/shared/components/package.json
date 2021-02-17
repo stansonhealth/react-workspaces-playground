@@ -8,6 +8,8 @@
     "lint": "eslint ./src/**/*.tsx --max-warnings=0 --format=codeframe"
   },
   "dependencies": {
+    "@stanson/services": "1.0.0",
+    "@stanson/constants": "1.0.0",
     "@react-workspaces/react-scripts": "3.3.0-alpha-08",
     "@storybook/react": "^5.2.8",
     "@testing-library/jest-dom": "^4.2.4",
@@ -22,7 +24,10 @@
     "react": "^16.12.0",
     "react-dom": "^16.12.0",
     "react-scripts": "3.3.0",
-    "typescript": "~3.7.4"
+    "typescript": "~3.7.4",
+    "@material-ui/core": "^4.11.3",
+    "axios": "^0.21.1",
+    "react-feather": "^2.0.9"
   },
   "eslintConfig": {
     "extends": "react-app"
