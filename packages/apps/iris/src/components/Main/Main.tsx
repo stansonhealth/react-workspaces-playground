@@ -1,37 +1,17 @@
 import React from "react";
-import {UserStore, UserName} from "@stanson/components";
-import {AppBar, makeStyles, Toolbar} from "@material-ui/core";
-
-
-const useStyles = makeStyles((theme) => ({
-  root: {
-    flexGrow: 1,
-  },
-  menuButton: {
-    marginRight: theme.spacing(2),
-  },
-}));
+import {UserStore, SiteHeader, ContentWrapper} from "@stanson/components";
+import {Container} from "@material-ui/core";
 
 const Main: React.FC = () => {
-  const classes = useStyles();
   const {state} = React.useContext(UserStore);
 
   return (
-    <div className={classes.root}>
-
-    <AppBar position="static">
-      <Toolbar variant="dense">
-        {
-          state.userDetails?.organization &&
-          <UserName
-            firstName={state.userDetails?.firstName || ''}
-            lastName={state.userDetails?.lastName || ''}
-            organizations={state.userDetails?.organizations || []}
-            currentOrg={state.userDetails.organization} />
-          }
-        </Toolbar>
-    </AppBar>
-    </div>
+    <React.Fragment>
+      <SiteHeader maxWidth="xl" />
+      <Container maxWidth="xl">
+        <ContentWrapper>hello</ContentWrapper>
+      </Container>
+    </React.Fragment>
     )
 }
 

@@ -8,14 +8,10 @@ import {theme} from "@stanson/constants/themes";
 const App: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
-      <div>
-        <CssBaseline />
-          <LoggedInUser>
-            <Container>
-              <Main></Main>
-            </Container>
-          </LoggedInUser>
-      </div>
+      <CssBaseline />
+      <LoggedInUser>
+          <Main></Main>
+      </LoggedInUser>
     </ThemeProvider>
   );
 };
