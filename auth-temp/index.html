@@ -1,0 +1,21 @@
+<html>
+<!-- Temporary page to ensure that the initial integration with Cedars works -->
+<body>
+<script type="text/javascript">
+    function sendJWT() {
+
+        var JWT = localStorage.getItem("stansonJWT")
+        window.parent.postMessage({
+            "JWT" : JWT,
+        }, '*');
+    }
+
+    function Listener(event) {
+        console.log(event);
+    }
+
+    window.addEventListener("message", Listener, false);
+    console.log("AUTH: added event listener");
+</script>
+</body>
+</html>

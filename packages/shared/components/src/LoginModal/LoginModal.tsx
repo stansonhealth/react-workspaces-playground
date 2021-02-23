@@ -8,14 +8,16 @@ import {
   TextField
 } from "@material-ui/core";
 import {UserActions, UserStore} from "../LoggedInUser";
-import {api} from "@stanson/services";
+import { Auth } from 'aws-amplify';
+import setupAmplify from "../SetupAmplify";
+
 
 interface LoginModalProps {
   open: boolean;
 }
 
 interface LoginDetails {
-  username?: string;
+  username: string;
   password?: string;
   'spring-security-redirect': string;
 }
@@ -31,7 +33,7 @@ const useStyles = makeStyles((theme) => ({
   },
   inputs: {
     width: '100%',
-    marginTop: 5
+    marginBottom: theme.spacing(2)
   },
   modal: {
     outline: "none",
@@ -39,20 +41,40 @@ const useStyles = makeStyles((theme) => ({
       outline: "none"
     }
   },
-  button: {
-    marginTop: 20
-  }
+  button: {}
 }));
 
 const LoginModal: React.FC<LoginModalProps> = (props) => {
   const classes = useStyles();
   const {dispatch, state} = React.useContext(UserStore);
   const stableDispatch = useCallback(dispatch, [])
+  const [federateLogin, setFederateLogin] = React.useState<boolean>(false);
   const [loginDetails, setLoginDetails] = React.useState<LoginDetails>({
+    username: '',
     'spring-security-redirect': '/login/hook'
   });
 
   const handleClick = () => stableDispatch(UserActions.loginAttempt())
+  const handleStepOne = () => {
+    console.log(loginDetails.username.indexOf('@'), loginDetails);
+    if (loginDetails.username && loginDetails.username.indexOf('@') > -1) {
+      dispatch(UserActions.setLoginType('saml'))
+      setFederateLogin(true);
+    } else {
+      dispatch(UserActions.setLoginType('oauth'))
+    }
+  }
+
+  React.useEffect(setupAmplify, [])
+
+  React.useEffect(() => {
+    if (federateLogin) {
+      (async () => {
+        await Auth.federatedSignIn({customProvider: 'vhh'});
+      })()
+    }
+  }, [federateLogin])
+
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => setLoginDetails({
       ...loginDetails,
       [event.target.name]: event.target.value
@@ -60,24 +82,11 @@ const LoginModal: React.FC<LoginModalProps> = (props) => {
 
   React.useEffect(() => {
     if (state.attemptLogin && loginDetails.password && loginDetails.username) {
-      const loginFormData = new FormData()
-      loginFormData.append('j_username', loginDetails.username)
-      loginFormData.append('j_password', loginDetails.password)
-      loginFormData.append('spring-security-redirect', '/login/hook')
-
-      const data = `j_username=${encodeURIComponent(loginDetails.username)}&spring-security-redirect=/login/hook&j_password=${encodeURIComponent(loginDetails.password)}`;
-
-      api({
-        method: 'post',
-        url: "j_spring_security_check",
-        data: data,
-        withCredentials: true,
-        headers: {'Content-Type': 'application/x-www-form-urlencoded', 'accept': 'application/json'}
-      }).then(() => {
-        stableDispatch(UserActions.LoginSuccess())
-      }).catch(err => {
-        console.log(err);
-      })
+      (async () => {
+        await Auth.signIn(loginDetails.username, loginDetails.password).catch(err => {
+          stableDispatch(UserActions.loginFailed())
+        })
+      })();
     }
   }, [state.attemptLogin, stableDispatch, loginDetails.password, loginDetails.username])
 
@@ -86,8 +95,16 @@ const LoginModal: React.FC<LoginModalProps> = (props) => {
       <Card elevation={10} className={classes.paper}>
         <CardContent>
           <TextField name="username" className={classes.inputs} label="email" onChange={handleInputChange} variant="outlined"></TextField>
-          <TextField type="password" name="password" className={classes.inputs} label="password" onChange={handleInputChange} variant="outlined"></TextField>
-          <Button variant="contained" onClick={handleClick} className={classes.button}>login</Button>
+          {
+            state?.loginType === 'oauth' &&
+            <React.Fragment>
+              <TextField type="password" name="password" className={classes.inputs} label="password" onChange={handleInputChange} variant="outlined"></TextField>
+              <Button variant="contained" onClick={handleClick} className={classes.button}>login</Button>
+            </React.Fragment>
+          }
+          { !state?.loginType &&
+            <Button variant="contained" onClick={handleStepOne} className={classes.button}>next</Button>
+          }
         </CardContent>
       </Card>
     </Modal>

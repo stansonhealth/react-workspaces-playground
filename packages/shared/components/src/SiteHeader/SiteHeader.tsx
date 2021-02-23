@@ -1,6 +1,5 @@
 import React from 'react';
 import {Container, ContainerTypeMap, makeStyles} from "@material-ui/core";
-import { Mic } from "mui-feather";
 
 interface Props {
   name?: string;
@@ -30,7 +29,6 @@ const SiteHeader: React.FC<Props> = (props) => {
     <div className={classes.root}>
      <Container maxWidth={props.maxWidth}>
        <div className={classes.header}>
-         <Mic />
        </div>
      </Container>
     </div>

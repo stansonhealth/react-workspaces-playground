@@ -1,7 +1,7 @@
 import React from 'react';
 
 import {LoggedInUser} from "@stanson/components";
-import {Container, CssBaseline, ThemeProvider} from "@material-ui/core";
+import {CssBaseline, ThemeProvider} from "@material-ui/core";
 import Main from "../Main/Main";
 import {theme} from "@stanson/constants/themes";
 

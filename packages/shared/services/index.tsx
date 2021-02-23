@@ -1,1 +1,1 @@
-export { api } from './src/api';
+export { useCognitoApi } from './src/Api';
