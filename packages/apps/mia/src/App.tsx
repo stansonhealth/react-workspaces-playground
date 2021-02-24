@@ -3,22 +3,16 @@ import './App.css';
 
 import {LoggedInUser} from '@stanson/components';
 import Main from "./components/Main/Main";
+import PageWrapper from "@stanson/components/src/PageWrapper/PageWrapper";
 
 const App: React.FC = () => {
 
   return (
-    <LoggedInUser>
-      <div className="App">
-        <header className="App-header">
-          <h1>
-            MIA
-          </h1>
-          <Main></Main>
-          <a href="http://localhost:3001">GO TO IRIS</a>
-        </header>
-
-      </div>
-    </LoggedInUser>
+    <PageWrapper>
+      <LoggedInUser>
+        <Main></Main>
+      </LoggedInUser>
+    </PageWrapper>
   );
 };
 

@@ -59,6 +59,7 @@ const LoggedInUser: React.FC = (props) => {
     if (token && expiration && !tokenNeedsRefresh(parseInt(expiration))) {
       setUserSession({token, expiration: parseInt(expiration)});
       setLoginRequired(false);
+      setRequireAuthPage(false);
     } else {
       setLoginRequired(true);
     }
@@ -66,15 +67,22 @@ const LoggedInUser: React.FC = (props) => {
     window.addEventListener("message", (e) => {
       const data = e.data;
       const type = data?.action;
+      console.log("LOGGED IN USER ----- ", e.data.action);
       switch(type) {
         case AuthMessages.SET_TOKEN:
           setUserSession({token: data.token, expiration: data.expiration});
           setLoginRequired(false);
+          setRequireAuthPage(false);
           localStorage.setItem(StorageKeys.STANSON_TOKEN, data.token);
           localStorage.setItem(StorageKeys.STANSON_TOKEN_EXPIRATION, data.expiration);
           break;
         case AuthMessages.LOGIN_REQUIRED:
           setDisplayLogin(true);
+          break;
+        case AuthMessages.HANDSHAKE:
+          if (e.source && !(e.source instanceof MessagePort) && !(e.source instanceof ServiceWorker)) {
+            e.source.postMessage({action: AuthMessages.HANDSHAKE}, '*')
+          }
           break;
         case AuthMessages.FEDERATE_LOGIN:
           window.location.href = process.env.REACT_APP_AUTH_URL || e.origin
@@ -89,6 +97,7 @@ const LoggedInUser: React.FC = (props) => {
           break;
       }
     }, false);
+
   }, [])
 
   const api = useCallback(useCognitoApi(userSession, () => {
@@ -109,14 +118,16 @@ const LoggedInUser: React.FC = (props) => {
 
   const setupComplete = userSession?.expiration && userSession?.token;
 
+  // console.log('render', setupComplete);
+
   return (
     <React.Fragment>
-    {
-      setupComplete &&
-      <Provider value={{ api }}>
-        {!loginRequired && props.children}
-      </Provider>
-    }
+      {
+        setupComplete &&
+        <Provider value={{ api }}>
+          {!loginRequired && props.children}
+        </Provider>
+      }
       <Modal style={displayIframe} open={requireAuthPage} className={classes.modal}>
         <Card elevation={10} className={classes.paper}>
           <CardContent>

@@ -4,6 +4,7 @@ import setupAmplify from "@stanson/components/src/SetupAmplify";
 import {Auth} from "aws-amplify";
 import {AuthMessages, LoginTypes, StorageKeys} from "@stanson/constants";
 import {tokenIsExpired, tokenNeedsRefresh} from "@stanson/services";
+import logo from "../../assets/premier-logo-dark.png";
 
 interface LoginDetails {
   username: string;
@@ -21,7 +22,8 @@ const useStyles = makeStyles((theme) => ({
   },
   loginContainer: {
     margin: theme.spacing(2),
-    maxWidth: 500
+    maxWidth: 500,
+    textAlign: "center"
   },
   inputs: {
     width: '100%',
@@ -33,8 +35,17 @@ const useStyles = makeStyles((theme) => ({
       outline: "none"
     }
   },
+  logo: {
+    width: 150,
+    margin: theme.spacing(4)
+  },
   button: {}
 }));
+
+const origins = [
+  "http://localhost:3001",
+  "http://localhost:3000"
+]
 
 const Authenticator: React.FC = () => {
   const classes = useStyles();
@@ -52,14 +63,26 @@ const Authenticator: React.FC = () => {
   useEffect(setupAmplify, [])
 
   useEffect(() => {
+    const provider = localStorage.getItem(StorageKeys.STANSON_FEDERATED_PROVIDER)
+    const redirect = localStorage.getItem(StorageKeys.STANSON_APP_REDIRECT)
+
+    window.parent.postMessage({action: AuthMessages.HANDSHAKE}, '*');
+
     window.addEventListener("message", (message) => {
+      console.log("AUTH APP MESSAGE --- ", message.data.action, message.origin)
       if (message.data?.action === AuthMessages.SET_REDIRECT) {
         setParentUrl(message.data.url);
       }
+
+      if (message.data?.action === AuthMessages.HANDSHAKE) {
+        if (origins.indexOf(message.origin) > -1) {
+          if (!provider) {
+            setTestUser(true);
+          }
+        }
+      }
     }, false);
 
-    const provider = localStorage.getItem(StorageKeys.STANSON_FEDERATED_PROVIDER)
-    const redirect = localStorage.getItem(StorageKeys.STANSON_APP_REDIRECT)
     if (provider) {
       localStorage.removeItem(StorageKeys.STANSON_FEDERATED_PROVIDER)
       setCustomProvider(provider);
@@ -68,17 +91,13 @@ const Authenticator: React.FC = () => {
       localStorage.removeItem(StorageKeys.STANSON_APP_REDIRECT)
       setRedirectUrl(redirect);
     }
-
-    setTestUser(true);
   }, [])
 
   const requestNewToken = () => {
-    console.log("REFRESH PRINCE!")
     return new Promise(async (resolve, reject) => {
       const cognitoUser = await Auth.currentAuthenticatedUser();
       const currentSession = await Auth.currentSession();
       cognitoUser.refreshSession(currentSession.getRefreshToken(), (err: any, result: any) => {
-        console.log("SMELL YA LATER!");
         resolve(result);
       });
     })
@@ -143,7 +162,9 @@ const Authenticator: React.FC = () => {
           console.log('failed');
         })
         const token = user?.getSignInUserSession()?.getIdToken()?.getJwtToken();
-        window.parent.postMessage({action: AuthMessages.SET_TOKEN, token}, '*');
+        const expiration = user?.getSignInUserSession()?.getIdToken()?.getExpiration();
+        window.parent.postMessage({action: AuthMessages.SET_TOKEN, token, expiration}, '*');
+
         })();
     }
   }, [attemptLogin, loginDetails.password, loginDetails.username])
@@ -174,6 +195,7 @@ const Authenticator: React.FC = () => {
       {
         loginRequired &&
         <div className={classes.loginContainer}>
+            <img src={logo} className={classes.logo} alt="asd" />
             <TextField name="username" className={classes.inputs} label="email" onChange={handleInputChange} variant="outlined"></TextField>
             {
               loginType === 'oauth' &&
