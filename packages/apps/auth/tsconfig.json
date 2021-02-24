@@ -15,6 +15,5 @@
     "noEmit": true,
     "jsx": "react"
   },
-  "include": [
-    "src/interfaces", "themes"]
+  "include": ["src"]
 }

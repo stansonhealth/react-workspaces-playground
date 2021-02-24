@@ -1,30 +1,24 @@
-import React, {useContext, useEffect} from 'react';
+import React from 'react';
 import './App.css';
 
-import {CompOne, LoggedInUser, UserStore} from '@stanson/components';
+import {LoggedInUser} from '@stanson/components';
+import Main from "./components/Main/Main";
 
 const App: React.FC = () => {
 
-  const {state} = useContext(UserStore);
-
-  useEffect(() => {
-    console.log(state);
-  }, [state.userDetails])
-
-  console.log(state);
-
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>
-          MIA
-        </h1>
-        <h2>Hot Reload Your React TypeScript Workspaces</h2>
-        <div className="components">
-            <CompOne name={state.userDetails?.username}/>
-        </div>
-      </header>
-    </div>
+    <LoggedInUser>
+      <div className="App">
+        <header className="App-header">
+          <h1>
+            MIA
+          </h1>
+          <Main></Main>
+          <a href="http://localhost:3001">GO TO IRIS</a>
+        </header>
+
+      </div>
+    </LoggedInUser>
   );
 };
 

@@ -1,10 +1,9 @@
-import React, {createContext, useEffect, useReducer} from 'react';
-import {LoginModal} from "../index";
+import React, {createContext, useEffect, useReducer, useState} from 'react';
 import {UserDetailsModel} from "./interfaces";
-import {CognitoUser} from "amazon-cognito-identity-js";
 import {AxiosInstance} from "axios";
 import {useCognitoApi} from "@stanson/services";
-import {Auth} from "aws-amplify";
+import {Card, CardContent, makeStyles, Modal} from "@material-ui/core";
+import {AuthMessages, StorageKeys} from "@stanson/constants";
 
 const initialState = {
   attemptLogin: false,
@@ -32,7 +31,7 @@ enum ActionType {
 
 interface ReducerModel {
   type: ActionType;
-  data?: CognitoUser | LoginTypes | UserDetailsModel | any;
+  data?: string | LoginTypes | UserDetailsModel | any;
 }
 
 type LoginTypes = 'saml' | 'oauth';
@@ -42,13 +41,13 @@ interface UserModel {
   loginType?: LoginTypes;
   requireLogin: boolean;
   attemptLogin: boolean;
-  cognitoUser?: CognitoUser;
+  cognitoToken?: string;
 }
 
 const UserActions = {
   loginAttempt: () => ({type: ActionType.ATTEMPT_LOGIN}),
   setLoginType: (data: LoginTypes) => ({type: ActionType.SET_LOGIN_TYPE, data}),
-  setUserSession: (data: CognitoUser) => ({type: ActionType.SET_USER_SESSION, data}),
+  setUserSession: (data: string) => ({type: ActionType.SET_USER_SESSION, data}),
   loginRequired: () => ({type: ActionType.TOGGLE_REQUIRE_LOGIN}),
   LoginSuccess: () => ({type: ActionType.LOGIN_SUCCESS}),
   loginFailed: () => ({type: ActionType.LOGIN_FAILED}),
@@ -56,7 +55,38 @@ const UserActions = {
   setUserData: (data: UserDetailsModel) => ({type: ActionType.SET_USER_DETAILS, data}),
 }
 
+const useStyles = makeStyles((theme) => ({
+  paper: {
+    position: 'absolute',
+    width: 400,
+    top: '50%',
+    left: '50%',
+    outline: "none",
+    transform: `translate(-50%, -50%)`,
+  },
+  iframe: {
+    border: 0,
+    width: '100%',
+    height: 300
+  },
+  inputs: {
+    width: '100%',
+    marginBottom: theme.spacing(2)
+  },
+  modal: {
+    outline: "none",
+    "&:focus": {
+      outline: "none"
+    }
+  },
+  button: {}
+}));
+
 const LoggedInUser: React.FC = (props) => {
+  const classes = useStyles();
+
+  const [displayLogin, setDisplayLogin] = useState();
+
   const [state, dispatch] = useReducer<React.Reducer<UserModel, ReducerModel>>((state, action) => {
     switch(action.type) {
       case ActionType.LOGIN_SUCCESS:
@@ -84,7 +114,8 @@ const LoggedInUser: React.FC = (props) => {
       case ActionType.SET_USER_SESSION:
         return {
           ...state,
-          cognitoUser: action.data
+          cognitoToken: action.data,
+          requireLogin: false
         }
       case ActionType.SET_LOGIN_TYPE:
         return {
@@ -107,27 +138,55 @@ const LoggedInUser: React.FC = (props) => {
     }
   }, initialState);
 
-  // 1. grab token from local storage
   useEffect(() => {
-    (async () => {
-      const user = await Auth.currentUserPoolUser().catch((err) => {
-        //2. no token available so lets login
-        dispatch(UserActions.loginRequired());
-      });
-      dispatch(UserActions.setUserSession(user));
-    })()
+    const token = localStorage.getItem(StorageKeys.STANSON_TOKEN)
+    if (token) {
+      dispatch(UserActions.setUserSession(token));
+    } else {
+      dispatch(UserActions.loginRequired());
+    }
   }, [])
 
-  const api = useCognitoApi(state.cognitoUser);
+  useEffect(() => {
+    window.addEventListener("message", (e) => {
+      const data = e.data;
+      const type = data?.action;
 
+      console.log(type, data);
 
-  // 2. if no token we need to fetch from localStorage
+      switch(type) {
+        case AuthMessages.SET_TOKEN:
+          dispatch(UserActions.setUserSession(data.token))
+          localStorage.setItem(StorageKeys.STANSON_TOKEN, data.token);
+          break;
+        case AuthMessages.LOGIN_REQUIRED:
+          setDisplayLogin(true);
+          break;
+        case AuthMessages.FEDERATE_LOGIN:
+          window.location.href = process.env.REACT_APP_AUTH_URL || e.origin
+          break;
+        case AuthMessages.REQUEST_REDIRECT:
+          if (e.source && !(e.source instanceof MessagePort) && !(e.source instanceof ServiceWorker)) {
+            e.source.postMessage({action: AuthMessages.SET_REDIRECT, url: window.location.href}, '*')
+          }
+          if (e.source) {
 
-  // 3. if localStorage has nothing we need to check with shared domain
+          }
+          break;
+        default:
+          console.log('unknown message', e);
+          break;
 
-  // 4. if shared domain comes back with nothing, we require login
+      }
 
-  console.log('rendering', state);
+    }, false);
+  }, [])
+
+  const api = useCognitoApi(state.cognitoToken);
+
+  const displayIframe = {
+    display: (displayLogin) ? "block" : "none"
+  }
 
   return (
     <React.Fragment>
@@ -137,7 +196,13 @@ const LoggedInUser: React.FC = (props) => {
         {!state.requireLogin && props.children}
       </Provider>
     }
-      <LoginModal open={state.requireLogin}></LoginModal>
+      <Modal style={displayIframe} open={true} className={classes.modal}>
+        <Card elevation={10} className={classes.paper}>
+          <CardContent>
+            <iframe title="stanson-auth-app" className={classes.iframe} src={process.env.REACT_APP_AUTH_URL}></iframe>
+          </CardContent>
+        </Card>
+      </Modal>
     </React.Fragment>
 
   )

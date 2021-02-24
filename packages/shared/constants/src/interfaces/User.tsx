@@ -31,3 +31,5 @@ export interface UserDetailsModel {
   "featureToggles": any[]
   "organizations": Organization[];
 }
+
+export type LoginTypes = "saml" | "oauth";

@@ -3,8 +3,7 @@ import {UserStore, SiteHeader, ContentWrapper} from "@stanson/components";
 import {Container} from "@material-ui/core";
 
 const Main: React.FC = () => {
-  const { api } = React.useContext(UserStore);
-
+  const {api} = React.useContext(UserStore);
   const [response, setResponse] = useState();
 
   useEffect(() => {
@@ -21,16 +20,9 @@ const Main: React.FC = () => {
 
   return (
     <React.Fragment>
-      <SiteHeader maxWidth="xl" />
-
-      <Container maxWidth="xl">
-        <ContentWrapper>
-          <div><a href="http://localhost:3002">GO TO MIA</a></div>
-          <div>{JSON.stringify(response, null, 2)}</div>
-          </ContentWrapper>
-      </Container>
+      <div>{JSON.stringify(response, null, 2)}</div>
     </React.Fragment>
-    )
+  )
 }
 
 export default Main
