@@ -1,9 +1,9 @@
 import React, {useEffect, useState} from "react";
-import {UserStore, SiteHeader, ContentWrapper} from "@stanson/components";
+import {ApiStore, SiteHeader, ContentWrapper} from "@stanson/components";
 import {Container} from "@material-ui/core";
 
 const Main: React.FC = () => {
-  const { api } = React.useContext(UserStore);
+  const { api } = React.useContext(ApiStore);
 
   const [response, setResponse] = useState();
 

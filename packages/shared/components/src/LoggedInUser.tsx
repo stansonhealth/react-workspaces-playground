@@ -1,33 +1,15 @@
-import React, {createContext, useCallback, useEffect, useReducer, useState} from 'react';
+import React, {createContext, useCallback, useEffect, useState} from 'react';
 import {UserDetailsModel} from "./interfaces";
 import axios, {AxiosInstance} from "axios";
 import {tokenNeedsRefresh, useCognitoApi} from "@stanson/services";
 import {Card, CardContent, makeStyles, Modal} from "@material-ui/core";
 import {AuthMessages, StorageKeys, UserSession} from "@stanson/constants";
 
-const initialState = {
-  attemptLogin: false,
-  requireLogin: false,
-};
-
-const UserStore = createContext<{
-  state: UserModel;
-  dispatch: React.Dispatch<any>;
+const ApiStore = createContext<{
   api: AxiosInstance
-}>({state: initialState, dispatch: () => null, api: axios.create()});
+}>({api: axios.create()});
 
-const { Provider } = UserStore;
-
-enum ActionType {
-  LOGOUT = "LOGOUT",
-  TOGGLE_REQUIRE_LOGIN = "REQUIRE_LOGIN",
-  SET_USER_SESSION="SET_USER_SESSION"
-}
-
-interface ReducerModel {
-  type: ActionType;
-  data?: UserSession | string | LoginTypes | UserDetailsModel | any;
-}
+const { Provider } = ApiStore;
 
 type LoginTypes = 'saml' | 'oauth';
 
@@ -38,12 +20,6 @@ interface UserModel {
   attemptLogin: boolean;
   cognitoToken?: string;
   sessionDetails?: UserSession;
-}
-
-const UserActions = {
-  setUserSession: (data: UserSession) => ({type: ActionType.SET_USER_SESSION, data}),
-  loginRequired: () => ({type: ActionType.TOGGLE_REQUIRE_LOGIN}),
-  logout: () => ({type: ActionType.LOGOUT}),
 }
 
 const useStyles = makeStyles((theme) => ({
@@ -73,41 +49,18 @@ const LoggedInUser: React.FC = (props) => {
 
   const [displayLogin, setDisplayLogin] = useState();
   const [requireAuthPage, setRequireAuthPage] = useState<boolean>(false);
+  const [userSession, setUserSession] = useState<UserSession>();
+  const [loginRequired, setLoginRequired] = useState<boolean>(false);
 
-  const [state, dispatch] = useReducer<React.Reducer<UserModel, ReducerModel>>((state, action) => {
-    switch(action.type) {
-      case ActionType.LOGOUT:
-        return {
-          attemptLogin: false,
-          requireLogin: true
-        }
-      case ActionType.TOGGLE_REQUIRE_LOGIN:
-        return {
-          ...state,
-          requireLogin: true
-        }
-      case ActionType.SET_USER_SESSION:
-        return {
-          ...state,
-          sessionDetails: {
-            ...state.sessionDetails,
-            token: action.data.token,
-            expiration: action.data.expiration
-          },
-          requireLogin: false
-        }
-      default:
-        throw new Error();
-    }
-  }, initialState);
 
   useEffect(() => {
     const token = localStorage.getItem(StorageKeys.STANSON_TOKEN)
     const expiration = localStorage.getItem(StorageKeys.STANSON_TOKEN_EXPIRATION)
     if (token && expiration && !tokenNeedsRefresh(parseInt(expiration))) {
-      dispatch(UserActions.setUserSession({token, expiration: parseInt(expiration)}));
+      setUserSession({token, expiration: parseInt(expiration)});
+      setLoginRequired(false);
     } else {
-      dispatch(UserActions.loginRequired());
+      setLoginRequired(true);
     }
 
     window.addEventListener("message", (e) => {
@@ -115,7 +68,8 @@ const LoggedInUser: React.FC = (props) => {
       const type = data?.action;
       switch(type) {
         case AuthMessages.SET_TOKEN:
-          dispatch(UserActions.setUserSession({token: data.token, expiration: data.expiration}))
+          setUserSession({token: data.token, expiration: data.expiration});
+          setLoginRequired(false);
           localStorage.setItem(StorageKeys.STANSON_TOKEN, data.token);
           localStorage.setItem(StorageKeys.STANSON_TOKEN_EXPIRATION, data.expiration);
           break;
@@ -137,30 +91,30 @@ const LoggedInUser: React.FC = (props) => {
     }, false);
   }, [])
 
-  const api = useCallback(useCognitoApi(state.sessionDetails, () => {
-    if (state?.sessionDetails?.expiration && tokenNeedsRefresh(state.sessionDetails.expiration)) {
+  const api = useCallback(useCognitoApi(userSession, () => {
+    if (userSession?.expiration && tokenNeedsRefresh(userSession.expiration)) {
       setRequireAuthPage(true);
     }
-  }), [state?.sessionDetails?.expiration, state?.sessionDetails?.token]);
+  }), [userSession?.expiration, userSession?.token]);
 
   useEffect(() => {
-    if (state.requireLogin) {
+    if (loginRequired) {
       setRequireAuthPage(true);
     }
-  }, [state.requireLogin])
+  }, [loginRequired])
 
   const displayIframe = {
     display: (displayLogin) ? "block" : "none"
   }
 
-  const setupComplete = state?.sessionDetails?.expiration && state?.sessionDetails?.token;
+  const setupComplete = userSession?.expiration && userSession?.token;
 
   return (
     <React.Fragment>
     {
       setupComplete &&
-      <Provider value={{ state, dispatch, api }}>
-        {!state.requireLogin && props.children}
+      <Provider value={{ api }}>
+        {!loginRequired && props.children}
       </Provider>
     }
       <Modal style={displayIframe} open={requireAuthPage} className={classes.modal}>
@@ -175,4 +129,4 @@ const LoggedInUser: React.FC = (props) => {
   )
 }
 
-export { UserStore, LoggedInUser, UserActions }
+export { ApiStore, LoggedInUser }

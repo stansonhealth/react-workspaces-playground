@@ -7,7 +7,7 @@ import {
   Modal,
   TextField
 } from "@material-ui/core";
-import {UserActions, UserStore} from "../LoggedInUser";
+import {ApiStore} from "../LoggedInUser";
 import { Auth } from 'aws-amplify';
 import setupAmplify from "../SetupAmplify";
 
@@ -46,7 +46,7 @@ const useStyles = makeStyles((theme) => ({
 
 const LoginModal: React.FC<LoginModalProps> = (props) => {
   const classes = useStyles();
-  const {dispatch, state} = React.useContext(UserStore);
+  const {dispatch, state} = React.useContext(ApiStore);
   const stableDispatch = useCallback(dispatch, [])
   const [federateLogin, setFederateLogin] = React.useState<boolean>(false);
   const [loginDetails, setLoginDetails] = React.useState<LoginDetails>({

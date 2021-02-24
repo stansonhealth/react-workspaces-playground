@@ -1,8 +1,8 @@
 import React, {useEffect, useState} from "react";
-import {UserStore} from "@stanson/components";
+import {ApiStore} from "@stanson/components";
 
 const Main: React.FC = () => {
-  const {api} = React.useContext(UserStore);
+  const {api} = React.useContext(ApiStore);
   const [response, setResponse] = useState();
 
   useEffect(() => {
