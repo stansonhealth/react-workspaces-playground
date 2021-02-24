@@ -1,13 +1,11 @@
 import React, {useEffect, useState} from "react";
-import {UserStore, SiteHeader, ContentWrapper} from "@stanson/components";
-import {Container} from "@material-ui/core";
+import {UserStore} from "@stanson/components";
 
 const Main: React.FC = () => {
   const {api} = React.useContext(UserStore);
   const [response, setResponse] = useState();
 
   useEffect(() => {
-    if (api) {
       (async () => {
         api.get("hello-world").then((response) => {
           setResponse(response.data);
@@ -15,7 +13,7 @@ const Main: React.FC = () => {
           console.log(err);
         })
       })()
-    }
+
   }, [api])
 
   return (

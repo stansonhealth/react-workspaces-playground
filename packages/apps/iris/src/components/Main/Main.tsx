@@ -8,7 +8,6 @@ const Main: React.FC = () => {
   const [response, setResponse] = useState();
 
   useEffect(() => {
-    if (api) {
       (async () => {
         api.get("hello-world").then((response) => {
           setResponse(response.data);
@@ -16,7 +15,6 @@ const Main: React.FC = () => {
           console.log(err);
         })
       })()
-    }
   }, [api])
 
   return (

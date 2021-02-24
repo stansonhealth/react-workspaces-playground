@@ -3,6 +3,7 @@ import {Button, makeStyles, TextField} from "@material-ui/core";
 import setupAmplify from "@stanson/components/src/SetupAmplify";
 import {Auth} from "aws-amplify";
 import {AuthMessages, LoginTypes, StorageKeys} from "@stanson/constants";
+import {tokenIsExpired, tokenNeedsRefresh} from "@stanson/services";
 
 interface LoginDetails {
   username: string;
@@ -52,7 +53,6 @@ const Authenticator: React.FC = () => {
 
   useEffect(() => {
     window.addEventListener("message", (message) => {
-      console.log("message received on auth", message.data);
       if (message.data?.action === AuthMessages.SET_REDIRECT) {
         setParentUrl(message.data.url);
       }
@@ -72,14 +72,41 @@ const Authenticator: React.FC = () => {
     setTestUser(true);
   }, [])
 
+  const requestNewToken = () => {
+    console.log("REFRESH PRINCE!")
+    return new Promise(async (resolve, reject) => {
+      const cognitoUser = await Auth.currentAuthenticatedUser();
+      const currentSession = await Auth.currentSession();
+      cognitoUser.refreshSession(currentSession.getRefreshToken(), (err: any, result: any) => {
+        console.log("SMELL YA LATER!");
+        resolve(result);
+      });
+    })
+  }
+
   useEffect(() => {
     if (testUser) {
       (async () => {
-        const user = await Auth.currentUserPoolUser().catch((err) => {
+        let user = await Auth.currentUserPoolUser().catch((err) => {
           setLoginRequired(true)
         });
-        const token = user?.getSignInUserSession()?.getIdToken()?.getJwtToken();
-        console.log(user);
+
+        let expiration = user?.getSignInUserSession()?.getIdToken()?.getExpiration();
+        if (user && expiration && tokenIsExpired(expiration)) {
+          console.log("LOGGING YOU OUT!");
+          await Auth.signOut();
+          setLoginRequired(true);
+          return;
+        } else if (user && expiration && tokenNeedsRefresh(expiration)) {
+          await requestNewToken();
+          user = await Auth.currentUserPoolUser().catch((err) => {
+            setLoginRequired(true)
+          });
+        }
+
+        let token = user?.getSignInUserSession()?.getIdToken()?.getJwtToken();
+        expiration = user?.getSignInUserSession()?.getIdToken()?.getExpiration();
+
         if (!token) {
           setLoginRequired(true)
           return;
@@ -88,11 +115,11 @@ const Authenticator: React.FC = () => {
         if (redirectUrl) {
           window.location.href = redirectUrl;
         } else {
-          window.parent.postMessage({action: AuthMessages.SET_TOKEN, token}, '*');
+          window.parent.postMessage({action: AuthMessages.SET_TOKEN, token, expiration}, '*');
         }
       })()
     }
-  }, [testUser])
+  }, [testUser, redirectUrl])
 
   useEffect(() => {
     if (loginRequired) {

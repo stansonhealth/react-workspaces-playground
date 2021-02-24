@@ -33,3 +33,8 @@ export interface UserDetailsModel {
 }
 
 export type LoginTypes = "saml" | "oauth";
+
+export interface UserSession {
+  token?: string;
+  expiration?: number;
+}
