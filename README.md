@@ -4,6 +4,7 @@ All available `start` scripts
 
 ```json
 {
+  "auth:start": "yarn workspace @stanson/auth start",
   "mia:start": "yarn workspace @stanson/mia start",
   "iris:start": "yarn workspace @stanson/iris start",
   "caden:start": "yarn workspace @stanson/caden start",
