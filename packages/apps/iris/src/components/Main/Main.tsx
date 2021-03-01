@@ -9,7 +9,7 @@ const Main: React.FC = () => {
 
   useEffect(() => {
       (async () => {
-        api.get("hello-world").then((response) => {
+        api.get("userDetails").then((response) => {
           setResponse(response.data);
         }).catch((err: Error) => {
           console.log(err);

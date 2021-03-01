@@ -4,7 +4,6 @@ import setupAmplify from "@stanson/components/src/SetupAmplify";
 import {Auth} from "aws-amplify";
 import {AuthMessages, LoginTypes, StorageKeys} from "@stanson/constants";
 import {tokenIsExpired, tokenNeedsRefresh} from "@stanson/services";
-import logo from "../../assets/premier-logo-dark.png";
 
 interface LoginDetails {
   username: string;
@@ -44,7 +43,8 @@ const useStyles = makeStyles((theme) => ({
 
 const origins = [
   "http://localhost:3001",
-  "http://localhost:3000"
+  "http://localhost:3000",
+  "http://localhost:8080"
 ]
 
 const Authenticator: React.FC = () => {
@@ -121,6 +121,7 @@ const Authenticator: React.FC = () => {
           user = await Auth.currentUserPoolUser().catch((err) => {
             setLoginRequired(true)
           });
+          console.log('REFRESHED');
         }
 
         let token = user?.getSignInUserSession()?.getIdToken()?.getJwtToken();
@@ -195,7 +196,6 @@ const Authenticator: React.FC = () => {
       {
         loginRequired &&
         <div className={classes.loginContainer}>
-            <img src={logo} className={classes.logo} alt="asd" />
             <TextField name="username" className={classes.inputs} label="email" onChange={handleInputChange} variant="outlined"></TextField>
             {
               loginType === 'oauth' &&

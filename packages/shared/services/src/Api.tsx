@@ -4,8 +4,9 @@ import {UserSession} from "@stanson/constants";
 export function useCognitoApi(userSession?: UserSession, callback?: () => void): AxiosInstance {
   if (userSession?.token) {
     const cognitoApi = axios.create({
-      baseURL: "https://2iwzfbavy9.execute-api.us-east-1.amazonaws.com/demo/",
+      baseURL: process.env.REACT_APP_STANSON_API,
       headers: {
+        'x-requested-with': "XMLHttpRequest",
         'Authorization': `Bearer ${userSession.token}`,
       },
       transformRequest: [function (data, headers) {
