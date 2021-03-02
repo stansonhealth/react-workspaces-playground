@@ -47,6 +47,16 @@ const origins = [
   "http://localhost:8080"
 ]
 
+interface PasswordRequiredModel {
+  attemptChange: boolean;
+  requiredAttributes?: {
+    [key:string]: string;
+  },
+  user?: any,
+  newPassword: string;
+  required: boolean;
+}
+
 const Authenticator: React.FC = () => {
   const classes = useStyles();
   const [loginType, setLoginType] = useState<LoginTypes>();
@@ -56,8 +66,13 @@ const Authenticator: React.FC = () => {
   const [redirectUrl, setRedirectUrl] = useState<string>();
   const [attemptLogin, setAttemptLogin] = useState<boolean>(false);
   const [loginRequired, setLoginRequired] = useState<boolean>(false);
+  const [passwordResetRequired, setPasswordResetRequired] = useState<PasswordRequiredModel>({
+    attemptChange: false,
+    newPassword: "",
+    required: false
+  });
   const [loginDetails, setLoginDetails] = React.useState<LoginDetails>({
-    username: '',
+    username: "",
   });
 
   useEffect(setupAmplify, [])
@@ -162,6 +177,32 @@ const Authenticator: React.FC = () => {
         const user = await Auth.signIn(loginDetails.username, loginDetails.password).catch(err => {
           console.log('failed');
         })
+
+        const { requiredAttributes, userAttributes } = user.challengeParam; // the array of required attributes, e.g ['email', 'phone_number']
+
+        if (user.challengeName === 'NEW_PASSWORD_REQUIRED') {
+
+          console.log(user)
+          const attr: {
+            [key:string]: string;
+          } = {}
+          requiredAttributes.forEach((item: string) => {
+            // TODO: figure out if we want to pre fill this
+            attr[item] = userAttributes[item];
+          });
+          setPasswordResetRequired({
+            attemptChange: false,
+            user: user,
+            requiredAttributes: attr,
+            newPassword: "",
+            required: true
+          })
+        } else {
+          const token = user?.getSignInUserSession()?.getIdToken()?.getJwtToken();
+          const expiration = user?.getSignInUserSession()?.getIdToken()?.getExpiration();
+          window.parent.postMessage({action: AuthMessages.SET_TOKEN, token, expiration}, '*');
+        }
+
         const token = user?.getSignInUserSession()?.getIdToken()?.getJwtToken();
         const expiration = user?.getSignInUserSession()?.getIdToken()?.getExpiration();
         window.parent.postMessage({action: AuthMessages.SET_TOKEN, token, expiration}, '*');
@@ -170,13 +211,50 @@ const Authenticator: React.FC = () => {
     }
   }, [attemptLogin, loginDetails.password, loginDetails.username])
 
+  useEffect(() => {
+    if (passwordResetRequired?.attemptChange) {
+      console.log('changing password', passwordResetRequired)
+      Auth.completeNewPassword(
+        passwordResetRequired.user,
+        passwordResetRequired.newPassword,
+        passwordResetRequired.requiredAttributes
+      ).then(user => {
+        console.log('changed password')
+        // at this time the user is logged in if no MFA required
+        const token = user?.getSignInUserSession()?.getIdToken()?.getJwtToken();
+        const expiration = user?.getSignInUserSession()?.getIdToken()?.getExpiration();
+        window.parent.postMessage({action: AuthMessages.SET_TOKEN, token, expiration}, '*');
+      }).catch(e => {
+        console.log(e);
+      });
+    }
+  }, [passwordResetRequired?.attemptChange])
+
   const handleClick = () => {
     setAttemptLogin(true);
   }
 
+  const handleChangeClick = () => setPasswordResetRequired({
+    ...passwordResetRequired,
+    attemptChange: true
+  });
+
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => setLoginDetails({
     ...loginDetails,
     [event.target.name]: event.target.value
+  });
+
+  const handlePasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => setPasswordResetRequired({
+    ...passwordResetRequired,
+    newPassword: event.target.value || ""
+  });
+
+  const handleRequiredAttrChange = (event: React.ChangeEvent<HTMLInputElement>) => setPasswordResetRequired({
+    ...passwordResetRequired,
+    requiredAttributes: {
+      ...passwordResetRequired.requiredAttributes,
+      [event.target.name]: event.target.value || ""
+    }
   });
 
   const handleStepOne = () => {
@@ -194,9 +272,9 @@ const Authenticator: React.FC = () => {
   return (
     <React.Fragment>
       {
-        loginRequired &&
+        loginRequired && !passwordResetRequired.required &&
         <div className={classes.loginContainer}>
-            <TextField name="username" className={classes.inputs} label="email" onChange={handleInputChange} variant="outlined"></TextField>
+            <TextField name="username" className={classes.inputs} label="username" onChange={handleInputChange} variant="outlined"></TextField>
             {
               loginType === 'oauth' &&
               <React.Fragment>
@@ -207,6 +285,20 @@ const Authenticator: React.FC = () => {
             { !loginType &&
             <Button variant="contained" onClick={handleStepOne} className={classes.button}>next</Button>
             }
+        </div>
+      }
+      {
+        passwordResetRequired.required &&
+        <div className={classes.loginContainer}>
+          <strong>please change your password</strong>
+          {
+            passwordResetRequired.requiredAttributes &&
+            Object.keys(passwordResetRequired.requiredAttributes).map(key => (
+              <TextField key={'changefield' + key} name={key} className={classes.inputs} label={key} onChange={handleRequiredAttrChange} variant="outlined"></TextField>
+            ))
+          }
+          <TextField name="password" type="password" className={classes.inputs} label="new password" onChange={handlePasswordChange} variant="outlined"></TextField>
+          <Button variant="contained" onClick={handleChangeClick} className={classes.button}>reset password</Button>
         </div>
       }
     </React.Fragment>
