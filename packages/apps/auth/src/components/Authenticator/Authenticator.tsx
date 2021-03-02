@@ -178,11 +178,10 @@ const Authenticator: React.FC = () => {
           console.log('failed');
         })
 
-        const { requiredAttributes, userAttributes } = user.challengeParam; // the array of required attributes, e.g ['email', 'phone_number']
+
 
         if (user.challengeName === 'NEW_PASSWORD_REQUIRED') {
-
-          console.log(user)
+          const { requiredAttributes, userAttributes } = user.challengeParam; // the array of required attributes, e.g ['email', 'phone_number']
           const attr: {
             [key:string]: string;
           } = {}
@@ -211,9 +210,9 @@ const Authenticator: React.FC = () => {
     }
   }, [attemptLogin, loginDetails.password, loginDetails.username])
 
+  const attemptChange = passwordResetRequired?.attemptChange;
   useEffect(() => {
-    if (passwordResetRequired?.attemptChange) {
-      console.log('changing password', passwordResetRequired)
+    if (attemptChange) {
       Auth.completeNewPassword(
         passwordResetRequired.user,
         passwordResetRequired.newPassword,
@@ -228,7 +227,7 @@ const Authenticator: React.FC = () => {
         console.log(e);
       });
     }
-  }, [passwordResetRequired?.attemptChange])
+  }, [attemptChange, passwordResetRequired])
 
   const handleClick = () => {
     setAttemptLogin(true);
