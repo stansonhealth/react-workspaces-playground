@@ -3,6 +3,7 @@ export { default as CompTwo } from './src/CompTwo';
 // export { default as LoginModal } from './src/LoginModal/LoginModal';
 export { default as UserName } from './src/UserName';
 export { default as SiteHeader} from './src/SiteHeader/SiteHeader';
+export { default as SideNav } from './src/SideNav/SideNav';
 export { default as ContentWrapper} from './src/ContentWrapper/ContentWrapper';
 export { default as PageWrapper} from './src/PageWrapper/PageWrapper';
 export { ApiStore, LoggedInUser } from './src/LoggedInUser';

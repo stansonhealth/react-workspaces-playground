@@ -1,7 +1,10 @@
-import React, {useEffect, useState} from "react";
+import React, {useCallback, useEffect, useState} from "react";
 import {Button, makeStyles, TextField} from "@material-ui/core";
 import setupAmplify from "@stanson/components/src/SetupAmplify";
 import {Auth} from "aws-amplify";
+import {
+  CognitoUserPool,
+} from 'amazon-cognito-identity-js';
 import {AuthMessages, LoginTypes, StorageKeys} from "@stanson/constants";
 import {tokenIsExpired, tokenNeedsRefresh} from "@stanson/services";
 
@@ -75,6 +78,15 @@ const Authenticator: React.FC = () => {
     username: "",
   });
 
+  const getJWT = (user: any) => user?.getSignInUserSession()?.getIdToken()?.getJwtToken();
+  const getJWTExpiration = (user: any) => user?.getSignInUserSession()?.getIdToken()?.getExpiration();
+
+  const processAmplifyResponse = useCallback((user: any) => {
+    const token = getJWT(user)
+    const expiration = getJWTExpiration(user)
+    window.parent.postMessage({action: AuthMessages.SET_TOKEN, token, expiration}, '*');
+  }, [])
+
   useEffect(setupAmplify, [])
 
   useEffect(() => {
@@ -118,18 +130,34 @@ const Authenticator: React.FC = () => {
     })
   }
 
+  const getUserPool = () => new CognitoUserPool({
+    UserPoolId: process.env.REACT_APP_COGNITO_POOL_ID || "",
+    ClientId: process.env.REACT_APP_COGNITO_CLIENT_ID || ""
+  });
+
   useEffect(() => {
     if (testUser) {
       (async () => {
-        let user = await Auth.currentUserPoolUser().catch((err) => {
+
+        // const currentSession = await Auth.currentSession();
+        //
+        // if (currentSession) {
+        //   console.log(tokenIsExpired(currentSession.getIdToken().getExpiration()));
+        // }
+        // return;
+
+        let user = await Auth.currentAuthenticatedUser().catch(() => {
           setLoginRequired(true)
         });
 
-        let expiration = user?.getSignInUserSession()?.getIdToken()?.getExpiration();
+        let expiration = getJWTExpiration(user)
         if (user && expiration && tokenIsExpired(expiration)) {
-          console.log("LOGGING YOU OUT!");
-          await Auth.signOut();
-          setLoginRequired(true);
+          try {
+            // await Auth.signOut();
+          } catch (err) {
+           //
+          }
+          setLoginRequired(true)
           return;
         } else if (user && expiration && tokenNeedsRefresh(expiration)) {
           await requestNewToken();
@@ -139,8 +167,8 @@ const Authenticator: React.FC = () => {
           console.log('REFRESHED');
         }
 
-        let token = user?.getSignInUserSession()?.getIdToken()?.getJwtToken();
-        expiration = user?.getSignInUserSession()?.getIdToken()?.getExpiration();
+        let token = getJWT(user);
+        expiration = getJWTExpiration(user)
 
         if (!token) {
           setLoginRequired(true)
@@ -148,7 +176,7 @@ const Authenticator: React.FC = () => {
         }
 
         if (redirectUrl) {
-          window.location.href = redirectUrl;
+          window.location.href = redirectUrl || "";
         } else {
           window.parent.postMessage({action: AuthMessages.SET_TOKEN, token, expiration}, '*');
         }
@@ -178,8 +206,6 @@ const Authenticator: React.FC = () => {
           console.log('failed');
         })
 
-
-
         if (user.challengeName === 'NEW_PASSWORD_REQUIRED') {
           const { requiredAttributes, userAttributes } = user.challengeParam; // the array of required attributes, e.g ['email', 'phone_number']
           const attr: {
@@ -196,19 +222,13 @@ const Authenticator: React.FC = () => {
             newPassword: "",
             required: true
           })
-        } else {
-          const token = user?.getSignInUserSession()?.getIdToken()?.getJwtToken();
-          const expiration = user?.getSignInUserSession()?.getIdToken()?.getExpiration();
-          window.parent.postMessage({action: AuthMessages.SET_TOKEN, token, expiration}, '*');
+          return;
         }
 
-        const token = user?.getSignInUserSession()?.getIdToken()?.getJwtToken();
-        const expiration = user?.getSignInUserSession()?.getIdToken()?.getExpiration();
-        window.parent.postMessage({action: AuthMessages.SET_TOKEN, token, expiration}, '*');
-
+        processAmplifyResponse(user);
         })();
     }
-  }, [attemptLogin, loginDetails.password, loginDetails.username])
+  }, [attemptLogin, loginDetails.password, loginDetails.username, processAmplifyResponse])
 
   const attemptChange = passwordResetRequired?.attemptChange;
   useEffect(() => {
@@ -218,10 +238,9 @@ const Authenticator: React.FC = () => {
         passwordResetRequired.newPassword,
         passwordResetRequired.requiredAttributes
       ).then(user => {
-        console.log('changed password')
         // at this time the user is logged in if no MFA required
-        const token = user?.getSignInUserSession()?.getIdToken()?.getJwtToken();
-        const expiration = user?.getSignInUserSession()?.getIdToken()?.getExpiration();
+        const token = getJWT(user)
+        const expiration = getJWTExpiration(user)
         window.parent.postMessage({action: AuthMessages.SET_TOKEN, token, expiration}, '*');
       }).catch(e => {
         console.log(e);

@@ -6,6 +6,6 @@ export enum StorageKeys {
 }
 
 export enum AuthTiming {
-  TOKEN_REFRESH = 290,
-  TOKEN_EXPIRED = 10
+  TOKEN_REFRESH = 280,
+  TOKEN_EXPIRED = 0
 }

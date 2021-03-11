@@ -20,7 +20,7 @@ export interface UserDetailsModel {
   "firstName": string;
   "lastName": string;
   "email": string;
-  "organization": Organization
+  "currentOrganization": Organization
   "authenticationOrganization": Organization
   "enabled": true,
   "accountExpired": false,

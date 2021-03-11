@@ -1,6 +1,6 @@
 import React from 'react';
 import {CssBaseline, Theme, ThemeProvider} from "@material-ui/core";
-import {theme} from "@stanson/constants/themes";
+import {theme} from "@stanson/constants";
 
 interface Props {
   name?: string;

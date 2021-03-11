@@ -1,3 +1,7 @@
 export * from './src/actions/Messages'
 export * from './src/interfaces/User'
+export * from './src/interfaces/Icons'
+export * from './src/interfaces/AppConfig'
 export * from './src/Enums'
+export {default as theme } from './src/themes'
+export {default as color } from './src/themes/colors'

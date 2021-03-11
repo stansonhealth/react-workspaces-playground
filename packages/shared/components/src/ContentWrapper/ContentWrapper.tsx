@@ -1,6 +1,6 @@
 import React from 'react';
 import {makeStyles} from "@material-ui/core";
-import {color} from "@stanson/constants/themes/colors";
+import {color} from "@stanson/constants";
 
 interface Props {
   name?: string;

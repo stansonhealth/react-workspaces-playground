@@ -16,5 +16,7 @@
     "jsx": "react"
   },
   "include": [
-    "src/interfaces", "themes"]
+    "src/interfaces",
+    "src/themes"
+  ]
 }

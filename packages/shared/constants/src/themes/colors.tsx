@@ -1,4 +1,4 @@
-export const color = {
+const color = {
   "darkblue-80": "#000000",
     "darkblue-70": "#001216",
     "darkblue-60": "#002630",
@@ -58,3 +58,5 @@ export const color = {
     "pink-30": "#D652A9",
     "pink-20": "#DB67B4",
 };
+
+export default color;

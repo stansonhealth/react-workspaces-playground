@@ -3,6 +3,7 @@ import {AuthTiming} from "../../constants";
 function testTokenDuration(expiration: number, testDuration: number) {
   const now = new Date().getTime() / 1000;
   const timeLeft = expiration - now;
+  console.log(timeLeft);
   return timeLeft < testDuration;
 }
 
