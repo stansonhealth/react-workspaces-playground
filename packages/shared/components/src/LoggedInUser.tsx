@@ -118,8 +118,6 @@ const LoggedInUser: React.FC = (props) => {
 
   const setupComplete = userSession?.expiration && userSession?.token;
 
-  // console.log('render', setupComplete);
-
   return (
     <React.Fragment>
       {

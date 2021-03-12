@@ -1,7 +1,7 @@
 import React, {useState} from "react";
 import {
-  Button, Collapse,
-  Link, List, ListItem, ListItemIcon, ListItemText,
+  Button,
+  Link as MuiLink,
   makeStyles,
   MenuItem,
   Select,
@@ -9,12 +9,13 @@ import {
 } from "@material-ui/core";
 import BackgroundImage from './header-bg.png';
 import {UserDetailsModel} from "../interfaces";
-import {ChevronDown, Home, LogOut, HelpCircle, Search} from "react-feather";
+import {ChevronDown, Home, LogOut, HelpCircle} from "react-feather";
 import {color, ISideNavLink, NavigationGroupModel} from "@stanson/constants";
 import MuiAccordion from '@material-ui/core/Accordion';
 import MuiAccordionSummary from '@material-ui/core/AccordionSummary';
 import MuiAccordionDetails from '@material-ui/core/AccordionDetails';
 import SideNavGroupLabel from "./SideNavGroupLabel";
+import {Link} from "react-router-dom";
 
 const Accordion = withStyles({
   root: {
@@ -33,37 +34,31 @@ const Accordion = withStyles({
   expanded: {},
 })(MuiAccordion);
 
-const AccordionSummary = withStyles({
+const AccordionSummary = withStyles(theme => ({
   root: {
     backgroundColor: "white",
     borderBottom: '0px',
-    minHeight: 56,
+    minHeight: 40,
     '&$expanded': {
-      minHeight: 56,
+      minHeight: 40,
     },
   },
   content: {
+    margin: `${theme.spacing(0.5)}px 14px`,
     '&$expanded': {
-      margin: '12px 0',
+      margin: `${theme.spacing(0.5)}px 14px`,
     },
   },
   expanded: {},
-})(MuiAccordionSummary);
+}))(MuiAccordionSummary);
 
 const AccordionDetails = withStyles((theme) => ({
   root: {
-    borderLeft: `2px solid ${theme.palette.primary}`,
-    padding: theme.spacing(2),
+    borderLeft: `5px solid ${theme.palette.primary.main}`,
+    padding: `0px ${theme.spacing(2) + 2}px`,
     backgroundColor: color["neutral-10"]
   },
 }))(MuiAccordionDetails);
-
-
-const NavLinkButton = withStyles((theme) => ({
-  label: {
-    justifyContent: "left"
-  }
-}))(Button);
 
 const useStyles = makeStyles(theme => ({
   userSection: {
@@ -96,6 +91,7 @@ const useStyles = makeStyles(theme => ({
     color: theme.palette.neutral.primary
   },
   accordian: {
+    marginTop: theme.spacing(2),
     width: 470,
     overflowY: "auto",
     overflowX: "hidden"
@@ -103,6 +99,9 @@ const useStyles = makeStyles(theme => ({
   nested: {
     paddingLeft: theme.spacing(4),
   },
+  linkButton: {
+    justifyContent: "left",
+  }
 }));
 
 interface Props {
@@ -110,7 +109,8 @@ interface Props {
   navigation: {
     links: ISideNavLink[],
     groups: NavigationGroupModel[]
-  }
+  },
+  closeMe: () => void
 }
 
 const SideNav: React.FC<Props> = (props) => {
@@ -121,9 +121,9 @@ const SideNav: React.FC<Props> = (props) => {
 
   const [openMenu, setOpenMenu] = useState<string>()
 
-  const handleChange = (e: React.FormEvent) => {
-    console.log(e);
-  };
+  const handleNavClick = (link: ISideNavLink) => {
+    window.location.href = `${process.env.REACT_APP_STANSON_API}#${link.path}`;
+  }
 
   const accordianStyle = () => (
     <div className={classes.accordian}>
@@ -135,8 +135,6 @@ const SideNav: React.FC<Props> = (props) => {
           }>
             <AccordionSummary
               expandIcon={<ChevronDown />}
-              aria-controls="panel1a-content"
-              id="panel1a-header"
             >
               <SideNavGroupLabel icon={group.icon} name={group.name} />
             </AccordionSummary>
@@ -145,7 +143,20 @@ const SideNav: React.FC<Props> = (props) => {
                 {
                   props.navigation.links.filter(link => link.location === group.name)
                     .map(link => (
-                      <NavLinkButton fullWidth>{link.name}</NavLinkButton>
+                      <React.Fragment key={link.path}>
+                      {
+                        link.app === 'legacy' &&
+                          <Button className={classes.linkButton} onClick={() => handleNavClick(link)} fullWidth>{link.name}</Button>
+                      }
+                        {
+                          link.app !== 'legacy' &&
+                          <Button
+                            component={Link}
+                            className={classes.linkButton}
+                            to={link.path}
+                            fullWidth>{link.name}</Button>
+                        }
+                      </React.Fragment>
                     ))
                 }
               </div>
@@ -184,16 +195,16 @@ const SideNav: React.FC<Props> = (props) => {
       }
       <div className={classes.usernav}>
         <div className={classes.userNavLeft}>
-          <Link underline="none" href={process.env.REACT_APP_STANSON_API} className={classes.userNavLink}>
+          <MuiLink underline="none" href={process.env.REACT_APP_STANSON_API} className={classes.userNavLink}>
             <Home size={14} /> home
-          </Link>
-          <Link underline="none" className={classes.userNavLink}>
+          </MuiLink>
+          <MuiLink underline="none" className={classes.userNavLink}>
             <HelpCircle size={14} /> support
-          </Link>
+          </MuiLink>
         </div>
-        <Link underline="none">
+        <MuiLink underline="none">
           <LogOut size={14} /> logout
-        </Link>
+        </MuiLink>
       </div>
     </div>
       {accordianStyle()}

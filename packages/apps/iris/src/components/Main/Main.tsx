@@ -1,7 +1,12 @@
 import React, {useEffect, useState} from "react";
 import {ApiStore, SiteHeader, ContentWrapper, SideNav} from "@stanson/components";
-import {ClickAwayListener, Container, Drawer} from "@material-ui/core";
+import { Container, Drawer} from "@material-ui/core";
 import {IAppConfig} from "@stanson/constants";
+import {
+  useLocation,
+  Route,
+} from "react-router-dom";
+import UserAccount from "../UserAccount/UserAccount";
 
 const Main: React.FC = () => {
   const { api } = React.useContext(ApiStore);
@@ -9,6 +14,12 @@ const Main: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
   const [userDetails, setUserDetails] = useState();
   const [navigation, setNavigation] = useState();
+
+  const location = useLocation();
+
+  React.useEffect(() => {
+    setMenuOpen(false);
+  }, [location]);
 
   useEffect(() => {
       (async () => {
@@ -44,16 +55,17 @@ const Main: React.FC = () => {
     {
       userDetails && navigation &&
         <React.Fragment>
-          <SiteHeader onMenuClick={handleMenuClick} maxWidth="xl" />
+          <SiteHeader name={userDetails.loggedInUser.username} onMenuClick={handleMenuClick} maxWidth="xl" />
           <Container maxWidth="xl">
             <ContentWrapper>
-              <div><a href="http://localhost:8080/stanson/#/home">GO TO MIA</a></div>
-              <div>{JSON.stringify(setUserDetails, null, 2)}</div>
-              </ContentWrapper>
+              <Route path="/editors/userAccount/">
+                <UserAccount />
+              </Route>
+            </ContentWrapper>
           </Container>
-          <Drawer transitionDuration={500} ModalProps={{ onBackdropClick: handleDrawerClose }} anchor="left" open={menuOpen} >
+          <Drawer transitionDuration={300} ModalProps={{ onBackdropClick: handleDrawerClose }} anchor="left" open={menuOpen} >
             { userDetails?.loggedInUser &&
-              <SideNav navigation={navigation} user={userDetails.loggedInUser}></SideNav>
+              <SideNav closeMe={() => setMenuOpen(false)} navigation={navigation} user={userDetails.loggedInUser}></SideNav>
             }
           </Drawer>
         </React.Fragment>

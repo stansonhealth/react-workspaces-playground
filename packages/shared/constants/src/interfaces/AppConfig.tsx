@@ -1,6 +1,7 @@
 import {IconNameType} from "./Icons";
 
 export interface ISideNavLink {
+  app: string;
   location: string;
   name: string;
   path: string;

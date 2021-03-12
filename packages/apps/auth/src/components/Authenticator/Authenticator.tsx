@@ -79,11 +79,10 @@ const Authenticator: React.FC = () => {
   });
 
   const getJWT = (user: any) => user?.getSignInUserSession()?.getIdToken()?.getJwtToken();
-  const getJWTExpiration = (user: any) => user?.getSignInUserSession()?.getIdToken()?.getExpiration();
 
   const processAmplifyResponse = useCallback((user: any) => {
     const token = getJWT(user)
-    const expiration = getJWTExpiration(user)
+    const expiration = resetIdleTimer();
     window.parent.postMessage({action: AuthMessages.SET_TOKEN, token, expiration}, '*');
   }, [])
 
@@ -120,55 +119,22 @@ const Authenticator: React.FC = () => {
     }
   }, [])
 
-  const requestNewToken = () => {
-    return new Promise(async (resolve, reject) => {
-      const cognitoUser = await Auth.currentAuthenticatedUser();
-      const currentSession = await Auth.currentSession();
-      cognitoUser.refreshSession(currentSession.getRefreshToken(), (err: any, result: any) => {
-        resolve(result);
-      });
-    })
-  }
-
-  const getUserPool = () => new CognitoUserPool({
-    UserPoolId: process.env.REACT_APP_COGNITO_POOL_ID || "",
-    ClientId: process.env.REACT_APP_COGNITO_CLIENT_ID || ""
-  });
-
   useEffect(() => {
     if (testUser) {
       (async () => {
+        const idleExpiration = localStorage.getItem(StorageKeys.STANSON_IDLE_EXPIRATION)
 
-        // const currentSession = await Auth.currentSession();
-        //
-        // if (currentSession) {
-        //   console.log(tokenIsExpired(currentSession.getIdToken().getExpiration()));
-        // }
-        // return;
+        if (!idleExpiration || tokenIsExpired(parseInt(idleExpiration))) {
+          await Auth.signOut();
+          setLoginRequired(true);
+          return;
+        }
 
         let user = await Auth.currentAuthenticatedUser().catch(() => {
           setLoginRequired(true)
         });
 
-        let expiration = getJWTExpiration(user)
-        if (user && expiration && tokenIsExpired(expiration)) {
-          try {
-            // await Auth.signOut();
-          } catch (err) {
-           //
-          }
-          setLoginRequired(true)
-          return;
-        } else if (user && expiration && tokenNeedsRefresh(expiration)) {
-          await requestNewToken();
-          user = await Auth.currentUserPoolUser().catch((err) => {
-            setLoginRequired(true)
-          });
-          console.log('REFRESHED');
-        }
-
-        let token = getJWT(user);
-        expiration = getJWTExpiration(user)
+        const token = getJWT(user);
 
         if (!token) {
           setLoginRequired(true)
@@ -178,11 +144,18 @@ const Authenticator: React.FC = () => {
         if (redirectUrl) {
           window.location.href = redirectUrl || "";
         } else {
+          const expiration = resetIdleTimer();
           window.parent.postMessage({action: AuthMessages.SET_TOKEN, token, expiration}, '*');
         }
       })()
     }
   }, [testUser, redirectUrl])
+
+  const resetIdleTimer = () => {
+    const now = new Date().getTime().toString()
+    localStorage.setItem(StorageKeys.STANSON_IDLE_EXPIRATION, now)
+    return now;
+  }
 
   useEffect(() => {
     if (loginRequired) {
@@ -194,6 +167,7 @@ const Authenticator: React.FC = () => {
   useEffect(() => {
     if (customProvider) {
       (async () => {
+        resetIdleTimer();
         await Auth.federatedSignIn({customProvider: customProvider});
       })()
     }
@@ -205,6 +179,10 @@ const Authenticator: React.FC = () => {
         const user = await Auth.signIn(loginDetails.username, loginDetails.password).catch(err => {
           console.log('failed');
         })
+
+        if (user) {
+          resetIdleTimer();
+        }
 
         if (user.challengeName === 'NEW_PASSWORD_REQUIRED') {
           const { requiredAttributes, userAttributes } = user.challengeParam; // the array of required attributes, e.g ['email', 'phone_number']
@@ -240,7 +218,7 @@ const Authenticator: React.FC = () => {
       ).then(user => {
         // at this time the user is logged in if no MFA required
         const token = getJWT(user)
-        const expiration = getJWTExpiration(user)
+        const expiration = resetIdleTimer();
         window.parent.postMessage({action: AuthMessages.SET_TOKEN, token, expiration}, '*');
       }).catch(e => {
         console.log(e);

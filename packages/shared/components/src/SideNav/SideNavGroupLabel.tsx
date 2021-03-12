@@ -1,5 +1,5 @@
 import React from "react";
-import {Button, makeStyles, Typography, withStyles} from "@material-ui/core";
+import { makeStyles, Typography, withStyles} from "@material-ui/core";
 import {IconNameType} from "@stanson/constants";
 import * as icons from 'react-feather';
 
@@ -14,6 +14,9 @@ const useStyles = makeStyles((theme) => ({
   },
   label: {
     marginLeft: theme.spacing(1)
+  },
+  icon: {
+    marginTop: theme.spacing(0.5)
   }
 }));
 
@@ -30,7 +33,9 @@ const SideNavGroupLabel: React.FC<Props> = (props) => {
   const IconComponent = icons[iconName] || icons['List'];
 
   return (
-    <div className={classes.root}><IconComponent /><LabelTypography variant="button" className={classes.label}>{props.name}</LabelTypography></div>
+    <div className={classes.root}>
+      <IconComponent size={18} className={classes.icon} />
+      <LabelTypography variant="button" className={classes.label}>{props.name}</LabelTypography></div>
   )
 }
 
